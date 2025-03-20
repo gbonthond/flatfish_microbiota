@@ -309,7 +309,10 @@ fish_var$rich   <- specnumber(fish_rar)
 #### DATA EXAMINATION ####
 
 #seq_depth
-fish_cor <- corr.test(fish_var[, c("condition_factor", "age_years", "weight_g", "length_cm", "grain_um", "vms_SAR", "x", "y")],
+fish_var$log_age <- log(fish_var$age_years)
+fish_var$log_weight <- log(fish_var$weight_g)
+fish_var$log2_grain <- log2(fish_var$grain_um)
+fish_cor <- corr.test(fish_var[, c("condition_factor", "log_age", "log_weight", "length_cm", "log2_grain", "vms_SAR")],
                       method = "spearman",
                       adjust = "none", ci = F)
 
@@ -318,7 +321,7 @@ corrplot(fish_cor[[1]], p.mat = fish_cor[[4]],
          tl.col = "black", tl.srt = 45, tl.cex =1 ,
          number.cex = 1, addgrid.col = "white",
          outline = F, diag = F, type = "lower",
-         cl.ratio = 0.1, insig = "blank", sig.level = 0.05)
+         cl.ratio = 0.1, insig = "blank", sig.level = 1)
 
 #########################
 
@@ -374,41 +377,35 @@ fish_var_bars_fam +
 load(file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_permanova_bray.Rdata")
 fish_permanova_bray
 
-#fish_permanova_ait  <- adonis2(fish_otu ~ species * (sex + condition_factor + log(age_years) + log(weight_g) + log2(grain_um) + vms_SAR),
-#                               data = fish_var,  permutations = 9999, method = "robust.aitchison", by = "terms")
-#save(fish_permanova_ait, file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_permanova_ait.Rdata")
-load(file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_permanova_ait.Rdata")
-fish_permanova_ait
-
 ##################
 
 
 #### DIFFERENTIAL ABUNDANCE ANALYSIS ####
 
-#reduce dataset to most OTUs in at least 10% of the samples, and of 0.1% abundance
-fish_red <- fish_rar[, fish_rar_tax$occupancy > 0.1 & fish_rar_tax$abundance > 0.001];dim(fish_red)
+#reduce dataset to most OTUs in at least 1% of the samples, and of 0.1% abundance
+fish_red <- fish_rar[, fish_rar_tax$occupancy > 0.01 & fish_rar_tax$abundance > 0.001];dim(fish_red)
 fish_red_tax <- fish_rar_tax[colnames(fish_red), ]
 
 #relevel species factor for manyglm for each species
 fish_var$species_lim <- relevel(fish_var$species, ref = "Limanda_limanda")
 fish_var$species_ple <- relevel(fish_var$species, ref = "Pleuronectes_platessa")
 
-#fish_mglm_bug <- manyglm(mvabund(fish_red) ~ species + sex + condition_factor + log(age_years) + log(weight_g) + log2(grain_um) + vms_SAR, data = fish_var)
+#fish_mglm_bug <- manyglm(mvabund(fish_red) ~ species + log(age_years) + condition_factor + log2(grain_um) + vms_SAR, data = fish_var, theta.method = "ML")
 #save(fish_mglm_bug, file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_mglm_bug.Rdata")
 load(file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_mglm_bug.Rdata")
 
-#fish_mglm_lim <- manyglm(mvabund(fish_red) ~ species_lim + sex + condition_factor + log(age_years) + log(weight_g) + log2(grain_um) + vms_SAR, data = fish_var)
+#fish_mglm_lim <- manyglm(mvabund(fish_red) ~ species_lim + log(age_years) + condition_factor + log2(grain_um) + vms_SAR, data = fish_var, theta.method = "ML")
 #save(fish_mglm_lim, file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_mglm_lim.Rdata")
 load(file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_mglm_lim.Rdata")
 
-#fish_mglm_ple <- manyglm(mvabund(fish_red) ~ species_ple + sex + condition_factor + log(age_years) + log(weight_g) + log2(grain_um) + vms_SAR, data = fish_var)
+#fish_mglm_ple <- manyglm(mvabund(fish_red) ~ species_ple + log(age_years) + condition_factor + log2(grain_um) + vms_SAR, data = fish_var, theta.method = "ML")
 #save(fish_mglm_ple, file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_mglm_ple.Rdata")
 load(file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_mglm_ple.Rdata")
 
 fish_gimp_bug <- gimper(fish_mglm_bug, ci = .95)
 fish_gimp_lim <- gimper(fish_mglm_lim, ci = .95)
 fish_gimp_ple <- gimper(fish_mglm_ple, ci = .95)
-
+  
 fish_gimp <- data.frame("otu" =  c(colnames(fish_mglm_bug$y), colnames(fish_mglm_lim$y), colnames(fish_mglm_ple$y)), 
                         "host" = c(rep("bug", ncol(fish_mglm_bug$y)), rep("lim", ncol(fish_mglm_lim$y)), rep("ple", ncol(fish_mglm_ple$y))))
 fish_gimp[, c(colnames(fish_red_tax))] <- fish_red_tax[fish_gimp$otu, ]
@@ -422,52 +419,27 @@ fish_gimp$pooled_stdr <- c(
   sqrt((fish_mglm_ple$stderr.coefficients[2, ]^2 + fish_mglm_ple$stderr.coefficients[3, ]^2)/2))
 fish_gimp$pooled_lwr <- fish_gimp$pooled_coef - 1.96 * fish_gimp$pooled_stdr
 fish_gimp$pooled_upr <- fish_gimp$pooled_coef + 1.96 * fish_gimp$pooled_stdr
-fish_gimp$pooled_p <- p.adjust(pt(fish_gimp$pooled_coef/fish_gimp$pooled_stdr, df = nrow(fish_var), lower.tail = F), method = "none")
+#fish_gimp$pooled_p <- p.adjust(pt(fish_gimp$pooled_coef/fish_gimp$pooled_stdr, df = nrow(fish_var), lower.tail = T), method = "none")
 
-fish_gimp$species <- as.factor(with(fish_gimp, ifelse(pooled_lwr > 0 & host == "bug", "bug",
-                                               ifelse(pooled_lwr > 0 & host == "lim", "lim",
-                                               ifelse(pooled_lwr > 0 & host == "ple", "ple",
-                                               ifelse(pooled_upr < 0 & host == "bug", "lim_ple",
-                                               ifelse(pooled_upr < 0 & host == "lim", "bug_ple",
-                                               ifelse(pooled_upr < 0 & host == "ple", "bug_lim", NA))))))))
+fish_gimp$species <- as.factor(with(fish_gimp,
+                                    ifelse(pooled_lwr > 0, host, 
+                                    ifelse(pooled_upr < 0, paste("no", host, sep = "_"),  NA))))
 
-fish_gimp_summary <- fish_gimp_bug$summary[c("vms_SAR", "log2.grain_um.", "condition_factor", "log.age_years.", "log.weight_g.", "sexM"), ] 
+fish_gimp_summary <- fish_gimp_bug$summary[c("vms_SAR", "log2.grain_um.", "condition_factor", "log.age_years."), ] 
 fish_gimp_summary["species", ] <- c("", "", sum(summary(fish_gimp$species)[1:6]))
-fish_gimp_summary["---lim", ]  <- c(summary(fish_gimp$species)["bug_ple"], summary(fish_gimp$species)["lim"], sum(summary(fish_gimp$species)["bug_ple"], summary(fish_gimp$species)["lim"]))
-fish_gimp_summary["---ple", ]  <- c(summary(fish_gimp$species)["bug_lim"], summary(fish_gimp$species)["ple"], sum(summary(fish_gimp$species)["bug_lim"], summary(fish_gimp$species)["ple"]))
-fish_gimp_summary["---bug", ]  <- c(summary(fish_gimp$species)["lim_ple"], summary(fish_gimp$species)["bug"], sum(summary(fish_gimp$species)["lim_ple"], summary(fish_gimp$species)["bug"]))
+fish_gimp_summary["---lim", ]  <- c(summary(fish_gimp$species)["no_lim"], summary(fish_gimp$species)["lim"], sum(summary(fish_gimp$species)["no_lim"], summary(fish_gimp$species)["lim"]))
+fish_gimp_summary["---ple", ]  <- c(summary(fish_gimp$species)["no_ple"], summary(fish_gimp$species)["ple"], sum(summary(fish_gimp$species)["no_ple"], summary(fish_gimp$species)["ple"]))
+fish_gimp_summary["---bug", ]  <- c(summary(fish_gimp$species)["no_bug"], summary(fish_gimp$species)["bug"], sum(summary(fish_gimp$species)["no_bug"], summary(fish_gimp$species)["bug"]))
 
 #final table showing differentially abundant and species specific species
 fish_gimp_summary
 ########################################
 
 
-#### VENN DIAGRAM ####
-
-# venn differential abundances
-venn_dif_abun <- c(
-  "lim"         = as.numeric(fish_gimp_summary[8, 2]),      # Only A
-  "ple"         = as.numeric(fish_gimp_summary[9, 2]),      # Only B
-  "bug"         = as.numeric(fish_gimp_summary[10, 2]),      # Only C
-  "lim&ple"     = as.numeric(fish_gimp_summary[8, 1]),    # Intersection of A and B
-  "lim&bug"     = as.numeric(fish_gimp_summary[9, 1]),    # Intersection of A and C
-  "ple&bug"     = as.numeric(fish_gimp_summary[10, 1]),    # Intersection of B and C
-  "lim&ple&bug" = 0   # Intersection of A, B, and C
-)
-
-plot(venn(venn_dif_abun),
-     fills = c("#187500", "#FFB100", "#E97777"),
-     edges = TRUE, quantities = TRUE, main = "differentially abundant OTUs")
-
-
-
-#####################
-
-
 #### FOREST PLOTS ####
 fish_gimp_grain <- fish_gimp_bug$tables$log2.grain[order(fish_gimp_bug$tables$log2.grain$occupancy, decreasing = T), ]
 fish_gimp_grain$taxon <- paste(rownames(fish_gimp_grain), fish_red_tax[rownames(fish_gimp_grain), "genus"])
-gg_fish_grain <-  ggplot(fish_gimp_grain,
+gg_fish_grain <-  ggplot(fish_gimp_grain[order(fish_gimp_grain$abundance, decreasing = T), ][1:10, ],
                          aes(x = reorder(taxon, -coefs), y = coefs)) + 
   geom_errorbar(aes(ymin = lowers, ymax = uppers), col = "black", alpha = .5, width = 0, linewidth = 2) +
   geom_point(aes(y = coefs), size = 2) +
@@ -479,7 +451,7 @@ gg_fish_grain <-  ggplot(fish_gimp_grain,
 
 fish_gimp_vms_SAR <- fish_gimp_bug$tables$vms_SAR[order(fish_gimp_bug$tables$vms_SAR$occupancy, decreasing = T), ]
 fish_gimp_vms_SAR$taxon <- paste(rownames(fish_gimp_vms_SAR), fish_red_tax[rownames(fish_gimp_vms_SAR), "genus"])
-gg_fish_vms_SAR <-  ggplot(fish_gimp_vms_SAR,
+gg_fish_vms_SAR <-  ggplot(fish_gimp_vms_SAR[order(fish_gimp_vms_SAR$abundance, decreasing = T), ][1:10, ],
                            aes(x = reorder(taxon, -coefs), y = coefs)) + 
   geom_errorbar(aes(ymin = lowers, ymax = uppers), col = "black", alpha = .5, width = 0, linewidth = 2) +
   geom_point(aes(y = coefs), size = 2) +
@@ -491,7 +463,7 @@ gg_fish_vms_SAR <-  ggplot(fish_gimp_vms_SAR,
 
 fish_gimp_age <- fish_gimp_bug$tables$log.age_years[order(fish_gimp_bug$tables$log.age_years$occupancy, decreasing = T), ]
 fish_gimp_age$taxon <- paste(rownames(fish_gimp_age), fish_red_tax[rownames(fish_gimp_age), "genus"])
-gg_fish_age <-  ggplot(fish_gimp_age,
+gg_fish_age <-  ggplot(fish_gimp_age[order(fish_gimp_age$abundance, decreasing = T), ][1:10, ],
                        aes(x = reorder(taxon, -coefs), y = coefs)) + 
   geom_errorbar(aes(ymin = lowers, ymax = uppers), col = "#54abf4", alpha = .5, width = 0, linewidth = 2) +
   geom_point(aes(y = coefs), size = 2) +
@@ -503,7 +475,7 @@ gg_fish_age <-  ggplot(fish_gimp_age,
 
 fish_gimp_condition <- fish_gimp_bug$tables$condition_factor[order(fish_gimp_bug$tables$condition_factor$occupancy, decreasing = T), ]
 fish_gimp_condition$taxon <- paste(rownames(fish_gimp_condition), fish_red_tax[rownames(fish_gimp_condition), "genus"])
-gg_fish_condition <-  ggplot(fish_gimp_condition,
+gg_fish_condition <-  ggplot(fish_gimp_condition[order(fish_gimp_condition$abundance, decreasing = T), ][1:10, ],
                        aes(x = reorder(taxon, -coefs), y = coefs)) + 
   geom_errorbar(aes(ymin = lowers, ymax = uppers), col = "#0500f4", alpha = .5, width = 0, linewidth = 2) +
   geom_point(aes(y = coefs), size = 2) +
@@ -519,12 +491,33 @@ gg_fish_species <-  ggplot(fish_gimp[fish_gimp$occupancy > 0 & fish_gimp$species
   scale_color_manual(values = c("#187500", "#FFB100", "#E97777"), guide = "none") + 
   geom_errorbar(aes(ymin = pooled_lwr, ymax = pooled_upr, col = host), alpha = .5, width = 0, linewidth = 2) +
   geom_point(aes(y = pooled_coef), size = 2) + 
-  ylim(0, 25) +
+  ylim(0, 20) +
   coord_flip() +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red", linewidth = 0.75) + 
   theme(panel.background = element_rect(fill = "white"),
         panel.border = element_rect(fill = "transparent",colour = "black", linewidth = 1)) +
   ggtitle("species specific OTUs + 95%CIs");gg_fish_species
+
+#####################
+
+
+#### VENN DIAGRAM ####
+
+# venn differential abundances
+venn_dif_abun <- c(
+  "lim"         = as.numeric(fish_gimp_summary["---lim", 2]),      # Only A
+  "ple"         = as.numeric(fish_gimp_summary["---ple", 2]),      # Only B
+  "bug"         = as.numeric(fish_gimp_summary["---bug", 2]),      # Only C
+  "lim&ple"     = as.numeric(fish_gimp_summary["---lim", 1]),    # Intersection of A and B
+  "lim&bug"     = as.numeric(fish_gimp_summary["---ple", 1]),    # Intersection of A and C
+  "ple&bug"     = as.numeric(fish_gimp_summary["---bug", 1]),    # Intersection of B and C
+  "lim&ple&bug" = 0   # Intersection of A, B, and C
+)
+
+plot(venn(venn_dif_abun),
+     fills = c("#187500", "#FFB100", "#E97777"),
+     edges = TRUE, quantities = TRUE, main = "differentially abundant OTUs")
+
 
 
 #####################
@@ -538,13 +531,13 @@ lmer_fish_ESN <- lmer(ESN ~ species * (sex + log2(grain_um) + vms_SAR + log(weig
                      na.action = na.fail, REML = F,
                      data = fish_var);AICc(lmer_fish_ESN)
 plot(simulateResiduals(lmer_fish_ESN))
-summary(lmer_fish_ESN);anova(lmer_fish_ESN)
 #dr_lmer_fish_ESN <- dredge(lmer_fish_ESN, trace = 2)
 #save(dr_lmer_fish_ESN, file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/dr_lmer_fish_ESN.Rdata")
 load(file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/dr_lmer_fish_ESN.Rdata")
 dr_lmer_fish_ESN
 lmer_fish_ESN_best <- get.models(dr_lmer_fish_ESN, subset = 1)[[1]]
-summary(lmer_fish_ESN_best);anova(lmer_fish_ESN_best)
+summary(lmer_fish_ESN_best);
+Anova(lmer_fish_ESN_best)
 r.squaredGLMM(lmer_fish_ESN_best)
 
 # OTU richness
@@ -554,14 +547,13 @@ lmer_fish_rich <- lmer(rich ~ species *
                       na.action = na.fail, REML = F,
                       data = fish_var);AICc(lmer_fish_rich)
 plot(simulateResiduals(lmer_fish_rich))
-summary(lmer_fish_rich);Anova(lmer_fish_rich)
 #dr_lmer_fish_rich <- dredge(lmer_fish_rich, trace = 2)
 #save(dr_lmer_fish_rich, file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/dr_lmer_fish_rich.Rdata")
 load(file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/dr_lmer_fish_rich.Rdata")
 dr_lmer_fish_rich
-
 lmer_fish_rich_best <- get.models(dr_lmer_fish_rich, subset = 1)[[1]]
-summary(lmer_fish_rich_best);Anova(lmer_fish_rich_best)
+summary(lmer_fish_rich_best);
+Anova(lmer_fish_rich_best)
 r.squaredGLMM(lmer_fish_rich_best)
 plot(effect(lmer_fish_rich_best, term = "species", resid = T), smooth.residuals = F)
 plot(effect(lmer_fish_rich_best, term = "log2(grain_um)", resid = T), smooth.residuals = F)
