@@ -308,7 +308,6 @@ fish_var$rich   <- specnumber(fish_rar)
 
 #### DATA EXAMINATION ####
 
-#seq_depth
 fish_var$log_age <- log(fish_var$age_years)
 fish_var$log_weight <- log(fish_var$weight_g)
 fish_var$log2_grain <- log2(fish_var$grain_um)
@@ -352,7 +351,7 @@ fish_var_bars_fam <- stacked.bars(input_variable = fish_var,
                                           taxon_level = "family",
                                           var_list = c("species", "sex", "sample_id"),
                                           number = 30,
-                                          tax_disp = c("phylum", "class", "family"),
+                                          tax_disp = c("phylum", "class", "order", "family"),
                                           X_levels = x_species,
                                           trans = "identity")
 
@@ -368,6 +367,37 @@ fish_var_bars_fam +
                                "#6f3819")) + th
 
 #####################
+
+
+#### NMDS ####
+#fish_nmds_sol1 <- metaMDS(fish_rar, autotransform = F, trymax = 2000, distance = "bray")
+#fish_nmds_sol2 <- metaMDS(fish_rar, autotransform = F, trymax = 2000, distance = "bray", previous.best = fish_nmds_sol1)
+#save(fish_nmds_sol2, file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_nmds_sol2.Rdata")
+load(file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_nmds_sol2.Rdata")
+fish_nmds_sol2
+
+par(mfrow = c(1, 1))
+plot(fish_nmds_sol2$points[, 1], fish_nmds_sol2$points[, 2],
+     col = ifelse(fish_var$species == "Limanda_limanda", "#FFB100", ifelse(fish_var$species == "Pleuronectes_platessa", "#E97777", "#187500")),
+     pch = ifelse(fish_var$sex == "F", 1, 2),
+     cex = 1, xlab = "NMDS1", ylab ="NMDS2", main = "species~sex")
+
+legend(x = "bottomleft", 
+       legend = c("Limanda_limanda F", "Limanda_limanda M", "Pleuronectes_platessa F", "Pleuronectes_platessa M", "Buglossidium_luteum F", "Buglossidium_luteum M"), 
+       pch = c(1:2), col = c("#FFB100", "#FFB100", "#E97777", "#E97777", "#187500", "#187500"))
+
+ordiellipse(fish_nmds_sol2, groups= fish_var$species, show.groups = "Pleuronectes_platessa", col = "#E97777", kind = "se", conf = 0.95, draw = "polygon", lty = .05)
+ordiellipse(fish_nmds_sol2, groups= fish_var$species, show.groups = "Buglossidium_luteum",   col = "#187500", kind = "se", conf = 0.95, draw = "polygon", lty = .05)
+ordiellipse(fish_nmds_sol2, groups= fish_var$species, show.groups = "Limanda_limanda",       col = "#FFB100", kind = "se", conf = 0.95, draw = "polygon", lty = .05, display = "sites")
+
+fish_nmds_vectors <- envfit(scores(fish_nmds_sol2) ~  vms_SAR + log2(grain_um) + condition_factor + log(age_years),
+                            data = fish_var, permutations = 999);fish_nmds_vectors
+
+env_scores <- scores(fish_nmds_vectors, display = "vectors") * 10
+arrows(0, 0, env_scores[, "NMDS1"], env_scores[, "NMDS2"])
+text(env_scores[, "NMDS1"], env_scores[, "NMDS2"], labels = rownames(env_scores), pos = 4)
+
+#############
 
 
 #### PERMANOVA ####
