@@ -356,15 +356,11 @@ fish_var_bars_fam <- stacked.bars(input_variable = fish_var,
                                           trans = "identity")
 
 fish_var_bars_fam +
-  scale_fill_manual(values = c("#b15928",
-                               "#d2ebf2","#c0dce6","#aecddb","#98bccd","#85acc1","#729cb4","#5e8ca7","#4b7d9c","#386d8f","#145078",
-                               "#cbe5d0","#94c1a6","#247852",
-                               "#c6dfaf","#7ec06e","#33a02c",
-                               "#ffe88d","#ffde5c","#ffcc00",
-                               "#dccce4","#a384bf","#6a3d9a","#800080",
-                               "#FDBF6F","#ff7f00",
-                               "#fbcecd","#fb9a99","#e31a1c",
-                               "#6f3819")) + th
+  scale_fill_manual(values = c("#DDDDDD","#6C6C6C","#85acc1","#729cb4","#5e8ca7","#386d8f",
+                               "#0075A2","#145078","#98BCCD","#002763","#C0DCE6","#94c1a6",
+                               "#2D8732","#247852","#C6DFAF","#02B2E7","#FFE8C5","#FFE88D",
+                               "#FFD119","#F0A202","#FF7F00","#F84930","#800080","#CCA0D8",
+                               "#Ffffff","#FBCECD","#FB9A99","#CC3344","#BA636D","#D3B4B8")) + th
 
 #####################
 
