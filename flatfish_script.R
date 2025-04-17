@@ -1,3 +1,6 @@
+#set working directory
+setwd("")
+
 #### PACKAGES ####
 library("ggplot2")
 library("psych")
@@ -279,22 +282,22 @@ gimper      <- function(model, vars = NULL, ord = "occupancy", summary = NULL, p
 
 
 #### DATA PREPARATION ####
-fish_var <- read.csv("C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/fish_var.csv", row.names = 1, header = T, stringsAsFactors = T);dim(fish_var)
+fish_var <- read.csv("fish_var.csv", row.names = 1, header = T, stringsAsFactors = T);dim(fish_var)
 fish_var$sample_id <- rownames(fish_var)
-fish_otu <- read.csv("C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/fish_otu.csv", row.names = 1, header = T, stringsAsFactors = T);dim(fish_otu)
+fish_otu <- read.csv("fish_otu.csv", row.names = 1, header = T, stringsAsFactors = T);dim(fish_otu)
 fish_otu <- fish_otu[rownames(fish_var), order(colSums(fish_otu), decreasing = T)];dim(fish_otu)
 fish_otu <- fish_otu[, colSums(fish_otu) > 0];dim(fish_otu)
 all.equal(rownames(fish_otu), rownames(fish_var))
 
-fish_tax <- read.csv("C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/fish_tax.csv", header = T, row.names = 1, stringsAsFactors = T)[, c(1, 3, 5, 7, 9, 11)];dim(fish_tax)
+fish_tax <- read.csv("fish_tax.csv", header = T, row.names = 1, stringsAsFactors = T)[, c(1, 3, 5, 7, 9, 11)];dim(fish_tax)
 fish_tax <- fish_tax[colnames(fish_otu), ];dim(fish_tax)
 fish_tax$otu <- rownames(fish_tax)
 
 #rarefaction to equalize seq_depth
 #fish_rar <- rarefaction(fish_otu, sample = 3500, replicate = 100, round = T);dim(fish_rar)
 #fish_rar <- fish_rar[, order(colSums(fish_rar), decreasing = T)];dim(fish_rar)
-#save(fish_rar, file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_rar.Rdata")
-load(file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_rar.Rdata")
+#save(fish_rar, file = "Rdata/fish_rar.Rdata")
+load(file = "Rdata/fish_rar.Rdata")
 
 fish_rar_tax <- fish_tax[colnames(fish_rar), ]
 fish_rar_tax$abundance <- abundance(fish_rar, fish_rar_tax)
@@ -368,8 +371,8 @@ fish_var_bars_fam +
 #### NMDS ####
 #fish_nmds_sol1 <- metaMDS(fish_rar, autotransform = F, trymax = 2000, distance = "bray")
 #fish_nmds_sol2 <- metaMDS(fish_rar, autotransform = F, trymax = 2000, distance = "bray", previous.best = fish_nmds_sol1)
-#save(fish_nmds_sol2, file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_nmds_sol2.Rdata")
-load(file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_nmds_sol2.Rdata")
+#save(fish_nmds_sol2, file = "Rdata/fish_nmds_sol2.Rdata")
+load(file = "Rdata/fish_nmds_sol2.Rdata")
 fish_nmds_sol2
 
 par(mfrow = c(1, 1))
@@ -399,8 +402,8 @@ text(env_scores[, "NMDS1"], env_scores[, "NMDS2"], labels = rownames(env_scores)
 #### PERMANOVA ####
 #fish_permanova_bray <- adonis2(fish_rar ~ species * (sex + condition_factor + log(age_years) + log(weight_g) + log2(grain_um) + vms_SAR),
 #                               data = fish_var, permutations = 9999, method = "bray", by = "terms")
-#save(fish_permanova_bray, file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_permanova_bray.Rdata")
-load(file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_permanova_bray.Rdata")
+#save(fish_permanova_bray, file = "Rdata/fish_permanova_bray.Rdata")
+load(file = "Rdata/fish_permanova_bray.Rdata")
 fish_permanova_bray
 
 ##################
@@ -417,16 +420,16 @@ fish_var$species_lim <- relevel(fish_var$species, ref = "Limanda_limanda")
 fish_var$species_ple <- relevel(fish_var$species, ref = "Pleuronectes_platessa")
 
 #fish_mglm_bug <- manyglm(mvabund(fish_red) ~ species + log(age_years) + condition_factor + log2(grain_um) + vms_SAR, data = fish_var, theta.method = "ML")
-#save(fish_mglm_bug, file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_mglm_bug.Rdata")
-load(file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_mglm_bug.Rdata")
+#save(fish_mglm_bug, file = "Rdata/fish_mglm_bug.Rdata")
+load(file = "Rdata/fish_mglm_bug.Rdata")
 
 #fish_mglm_lim <- manyglm(mvabund(fish_red) ~ species_lim + log(age_years) + condition_factor + log2(grain_um) + vms_SAR, data = fish_var, theta.method = "ML")
-#save(fish_mglm_lim, file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_mglm_lim.Rdata")
-load(file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_mglm_lim.Rdata")
+#save(fish_mglm_lim, file = "Rdata/fish_mglm_lim.Rdata")
+load(file = "Rdata/fish_mglm_lim.Rdata")
 
 #fish_mglm_ple <- manyglm(mvabund(fish_red) ~ species_ple + log(age_years) + condition_factor + log2(grain_um) + vms_SAR, data = fish_var, theta.method = "ML")
-#save(fish_mglm_ple, file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_mglm_ple.Rdata")
-load(file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/fish_mglm_ple.Rdata")
+#save(fish_mglm_ple, file = "Rdata/fish_mglm_ple.Rdata")
+load(file = "Rdata/fish_mglm_ple.Rdata")
 
 fish_gimp_bug <- gimper(fish_mglm_bug, ci = .95)
 fish_gimp_lim <- gimper(fish_mglm_lim, ci = .95)
@@ -558,8 +561,8 @@ lmer_fish_ESN <- lmer(ESN ~ species * (sex + log2(grain_um) + vms_SAR + log(weig
                      data = fish_var);AICc(lmer_fish_ESN)
 plot(simulateResiduals(lmer_fish_ESN))
 #dr_lmer_fish_ESN <- dredge(lmer_fish_ESN, trace = 2)
-#save(dr_lmer_fish_ESN, file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/dr_lmer_fish_ESN.Rdata")
-load(file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/dr_lmer_fish_ESN.Rdata")
+#save(dr_lmer_fish_ESN, file = "Rdata/dr_lmer_fish_ESN.Rdata")
+load(file = "Rdata/dr_lmer_fish_ESN.Rdata")
 dr_lmer_fish_ESN
 lmer_fish_ESN_best <- get.models(dr_lmer_fish_ESN, subset = 1)[[1]]
 summary(lmer_fish_ESN_best);
@@ -574,8 +577,8 @@ lmer_fish_rich <- lmer(rich ~ species *
                       data = fish_var);AICc(lmer_fish_rich)
 plot(simulateResiduals(lmer_fish_rich))
 #dr_lmer_fish_rich <- dredge(lmer_fish_rich, trace = 2)
-#save(dr_lmer_fish_rich, file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/dr_lmer_fish_rich.Rdata")
-load(file = "C:/Users/Bonthond/Documents/GitHub/flatfish_microbiota/Rdata/dr_lmer_fish_rich.Rdata")
+#save(dr_lmer_fish_rich, file = "Rdata/dr_lmer_fish_rich.Rdata")
+load(file = "Rdata/dr_lmer_fish_rich.Rdata")
 dr_lmer_fish_rich
 lmer_fish_rich_best <- get.models(dr_lmer_fish_rich, subset = 1)[[1]]
 summary(lmer_fish_rich_best);
